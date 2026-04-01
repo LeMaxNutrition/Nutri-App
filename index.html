@@ -410,7 +410,15 @@ h3{font-size:15px;font-weight:500}
         <button class="btn" style="margin-top:12px" onclick="resetOnboard()">Reconfigurer mon profil</button>
       </div>
       <div class="card">
-        <h3 style="margin-bottom:4px">Objectifs journaliers</h3>
+        <h3 style="margin-bottom:4px">Clé API Anthropic</h3>
+        <p class="small muted" style="margin-bottom:12px">Nécessaire pour analyser tes photos. Stockée uniquement sur ton appareil.</p>
+        <div class="ob-field" style="margin-bottom:0">
+          <input class="ob-input" type="password" id="s-apikey" placeholder="sk-ant-api03-..." autocomplete="off" style="font-family:'DM Mono',monospace;font-size:13px">
+        </div>
+        <p class="small muted" style="margin-top:8px">
+          Obtenir une clé : <a href="https://console.anthropic.com/settings/keys" style="color:var(--accent)">console.anthropic.com</a>
+        </p>
+      </div>
         <p class="small muted" style="margin-bottom:16px">Modifiez selon vos besoins</p>
         <div class="setting-row">
           <div><h3>Calories</h3><p class="small muted">kcal / jour</p></div>
@@ -667,10 +675,20 @@ Réponds UNIQUEMENT avec un JSON valide, sans backticks ni markdown:
 }
 Couleurs: teal, coral, amber, blue, purple, green, pink. Couleur différente par aliment.`;
 
+  const apiKey = S.get('nutri_apikey') || '';
+  if (!apiKey) {
+    document.getElementById('error-container').innerHTML = `<div class="error-msg">⚠️ Clé API manquante — va dans <strong>Réglages</strong> pour l'ajouter.</div>`;
+    btn.disabled = false; btn.innerHTML = "Analyser l'assiette"; return;
+  }
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
@@ -956,6 +974,8 @@ function loadSettings() {
   document.getElementById('s-prot').value = s.prot;
   document.getElementById('s-gluc').value = s.gluc;
   document.getElementById('s-lip').value = s.lip;
+  const key = S.get('nutri_apikey') || '';
+  document.getElementById('s-apikey').value = key;
   // Show profile card
   const profile = S.get('nutri_profile');
   const card = document.getElementById('profile-card');
@@ -984,6 +1004,8 @@ function saveSettings() {
     lip:  parseInt(document.getElementById('s-lip').value)  || 65,
   };
   S.set('nutri_settings', s);
+  const key = document.getElementById('s-apikey').value.trim();
+  if (key) S.set('nutri_apikey', key);
   toast('Réglages enregistrés ✓');
   renderHeaderRing();
 }
