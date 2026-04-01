@@ -419,6 +419,8 @@ h3{font-size:15px;font-weight:500}
           Obtenir une clé : <a href="https://console.anthropic.com/settings/keys" style="color:var(--accent)">console.anthropic.com</a>
         </p>
       </div>
+      <div class="card" style="margin-top:12px">
+        <h3 style="margin-bottom:4px">Objectifs journaliers</h3>
         <p class="small muted" style="margin-bottom:16px">Modifiez selon vos besoins</p>
         <div class="setting-row">
           <div><h3>Calories</h3><p class="small muted">kcal / jour</p></div>
@@ -438,15 +440,13 @@ h3{font-size:15px;font-weight:500}
         </div>
       </div>
       <button class="btn primary" style="margin-top:16px" onclick="saveSettings()">Enregistrer</button>
-      <div style="margin-top:20px">
-        <div class="card">
-          <h3 style="margin-bottom:4px">Gérer les repas</h3>
-          <p class="small muted" style="margin-bottom:14px">Supprimer des repas spécifiques ou toutes les données.</p>
-          <div id="settings-meals-list"></div>
-          <button class="btn danger" style="margin-top:12px" onclick="confirmClear()">Effacer toutes les données</button>
-        </div>
+      <div class="card" style="margin-top:20px">
+        <h3 style="margin-bottom:4px">Gérer les repas</h3>
+        <p class="small muted" style="margin-bottom:14px">Supprimer des repas spécifiques ou toutes les données.</p>
+        <div id="settings-meals-list"></div>
+        <button class="btn danger" style="margin-top:12px" onclick="confirmClear()">Effacer toutes les données</button>
       </div>
-      <div style="margin-top:20px;text-align:center">
+      <div style="margin-top:20px;text-align:center;padding-bottom:8px">
         <p class="small muted">Nutri v1.0 · Données 100% locales</p>
       </div>
     </div>
