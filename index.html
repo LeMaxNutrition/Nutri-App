@@ -440,9 +440,10 @@ h3{font-size:15px;font-weight:500}
       <button class="btn primary" style="margin-top:16px" onclick="saveSettings()">Enregistrer</button>
       <div style="margin-top:20px">
         <div class="card">
-          <h3 style="margin-bottom:4px">Données</h3>
-          <p class="small muted" style="margin-bottom:12px">Toutes vos données sont stockées localement sur votre appareil.</p>
-          <button class="btn danger" onclick="confirmClear()">Effacer toutes les données</button>
+          <h3 style="margin-bottom:4px">Gérer les repas</h3>
+          <p class="small muted" style="margin-bottom:14px">Supprimer des repas spécifiques ou toutes les données.</p>
+          <div id="settings-meals-list"></div>
+          <button class="btn danger" style="margin-top:12px" onclick="confirmClear()">Effacer toutes les données</button>
         </div>
       </div>
       <div style="margin-top:20px;text-align:center">
@@ -711,26 +712,53 @@ Couleurs: teal, coral, amber, blue, purple, green, pink. Couleur différente par
   }
 }
 
+// ─── SCAN RESULTS (editable) ──────────────────────────────────────────────
+let currentAliments = [];
+
 function renderScanResults(data) {
-  const aliments = data.aliments || [];
-  if (!aliments.length) { document.getElementById('results').innerHTML = '<p class="muted small" style="margin-top:12px">Aucun aliment détecté. Essayez avec une autre photo.</p>'; return; }
+  currentAliments = (data.aliments || []).map((a, i) => ({ ...a, _id: i }));
+  if (!currentAliments.length) {
+    document.getElementById('results').innerHTML = '<p class="muted small" style="margin-top:12px">Aucun aliment détecté. Essayez avec une autre photo.</p>';
+    return;
+  }
+  renderEditableResults(data.note || '');
+  renderHeaderRing();
+}
 
-  const totalCal  = aliments.reduce((s,a) => s+a.calories, 0);
-  const totalG    = aliments.reduce((s,a) => s+a.poids_g, 0);
-  const totalProt = aliments.reduce((s,a) => s+(a.proteines_g||0), 0);
-  const totalGluc = aliments.reduce((s,a) => s+(a.glucides_g||0), 0);
-  const totalLip  = aliments.reduce((s,a) => s+(a.lipides_g||0), 0);
+function renderEditableResults(note) {
+  const aliments = currentAliments;
+  const totalCal  = aliments.reduce((s,a) => s + (parseInt(a.calories)||0), 0);
+  const totalG    = aliments.reduce((s,a) => s + (parseInt(a.poids_g)||0), 0);
+  const totalProt = aliments.reduce((s,a) => s + (parseFloat(a.proteines_g)||0), 0);
+  const totalGluc = aliments.reduce((s,a) => s + (parseFloat(a.glucides_g)||0), 0);
+  const totalLip  = aliments.reduce((s,a) => s + (parseFloat(a.lipides_g)||0), 0);
 
-  const rows = aliments.map(a => {
+  const rows = aliments.map((a, i) => {
     const c = colorMap[a.couleur] || colorMap.teal;
-    const pct = Math.round((a.calories/totalCal)*100);
-    return `<div class="food-row">
-      <div>
-        <span class="pill" style="background:${c.bg};color:${c.text}">${a.nom}</span>
-        <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${c.bar}"></div></div>
+    const pct = totalCal > 0 ? Math.round(((parseInt(a.calories)||0)/totalCal)*100) : 0;
+    return `<div class="food-row" style="display:block;padding:12px 0;border-bottom:1px solid var(--border)" id="food-row-${i}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="pill" style="background:${c.bg};color:${c.text};flex:1;text-align:left;padding:6px 10px">
+          <input type="text" value="${a.nom}" onchange="updateAliment(${i},'nom',this.value)"
+            style="background:none;border:none;color:inherit;font:inherit;width:100%;outline:none;min-width:0">
+        </span>
+        <button onclick="removeAliment(${i})" style="background:none;border:none;color:var(--txt3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">×</button>
       </div>
-      <span class="small muted" style="white-space:nowrap">~${a.poids_g} g</span>
-      <span class="mono" style="font-size:14px;font-weight:500;white-space:nowrap">${a.calories}</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div class="ob-label" style="font-size:10px">Poids (g)</div>
+          <input type="number" value="${a.poids_g}" min="0" max="2000"
+            onchange="updateAliment(${i},'poids_g',+this.value)"
+            style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r3);color:var(--txt);font-family:'DM Mono',monospace;font-size:14px;padding:6px 10px;text-align:center">
+        </div>
+        <div>
+          <div class="ob-label" style="font-size:10px">Calories (kcal)</div>
+          <input type="number" value="${a.calories}" min="0" max="5000"
+            onchange="updateAliment(${i},'calories',+this.value)"
+            style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r3);color:var(--txt);font-family:'DM Mono',monospace;font-size:14px;padding:6px 10px;text-align:center">
+        </div>
+      </div>
+      <div class="bar-wrap" style="margin-top:8px"><div class="bar-fill" style="width:${pct}%;background:${c.bar}"></div></div>
     </div>`;
   }).join('');
 
@@ -738,16 +766,19 @@ function renderScanResults(data) {
     id: Date.now().toString(),
     date: todayStr(),
     time: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
-    aliments,
+    aliments: currentAliments,
     totalCal, totalG, totalProt, totalGluc, totalLip,
-    note: data.note || ''
+    note
   };
 
   document.getElementById('results').innerHTML = `
     <div class="card" style="margin-top:16px">
-      <p class="section-title">Résultat</p>
-      ${rows}
-      <div class="total-strip">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <p class="section-title" style="margin:0">Résultat — modifiable</p>
+        <button onclick="addAliment()" style="background:none;border:1px solid var(--border);border-radius:20px;color:var(--accent);font-size:12px;padding:3px 10px;cursor:pointer;font-family:'DM Sans',sans-serif">＋ Ajouter</button>
+      </div>
+      <div id="aliments-rows">${rows}</div>
+      <div class="total-strip" id="total-strip">
         <div><p class="label">Total calories</p><p class="big">${totalCal}</p></div>
         <div style="text-align:right"><p class="label">Poids estimé</p><p style="font-size:18px;font-weight:500;color:#0a0a0a;font-family:'DM Mono',monospace">${totalG} g</p></div>
       </div>
@@ -756,19 +787,66 @@ function renderScanResults(data) {
         <div class="macro-chip"><div class="val" style="color:#f0a87a">${Math.round(totalGluc)}</div><div class="lbl">Glucides g</div></div>
         <div class="macro-chip"><div class="val" style="color:#ffc850">${Math.round(totalLip)}</div><div class="lbl">Lipides g</div></div>
       </div>
-      ${data.note ? `<div class="ai-note">${data.note}</div>` : ''}
+      ${note ? `<div class="ai-note">${note}</div>` : ''}
     </div>
-    <button class="btn primary" style="margin-top:0" onclick="saveCurrentMeal(${JSON.stringify(mealObj).replace(/"/g,'&quot;')})">＋ Enregistrer ce repas</button>
+    <button class="btn primary" style="margin-top:0" id="save-meal-btn" onclick='saveCurrentMeal()'>＋ Enregistrer ce repas</button>
   `;
-  renderHeaderRing();
 }
 
-function saveCurrentMeal(meal) {
+function updateAliment(i, field, value) {
+  currentAliments[i][field] = value;
+  // Recompute totals only (no full re-render to keep focus)
+  const totalCal  = currentAliments.reduce((s,a) => s+(parseInt(a.calories)||0), 0);
+  const totalG    = currentAliments.reduce((s,a) => s+(parseInt(a.poids_g)||0), 0);
+  const totalProt = currentAliments.reduce((s,a) => s+(parseFloat(a.proteines_g)||0), 0);
+  const totalGluc = currentAliments.reduce((s,a) => s+(parseFloat(a.glucides_g)||0), 0);
+  const totalLip  = currentAliments.reduce((s,a) => s+(parseFloat(a.lipides_g)||0), 0);
+  const strip = document.getElementById('total-strip');
+  if (strip) {
+    strip.querySelector('.big').textContent = totalCal;
+    strip.querySelector('[style*="18px"]').textContent = totalG + ' g';
+  }
+  const chips = document.querySelectorAll('.macro-chip .val');
+  if (chips[0]) chips[0].textContent = Math.round(totalProt);
+  if (chips[1]) chips[1].textContent = Math.round(totalGluc);
+  if (chips[2]) chips[2].textContent = Math.round(totalLip);
+}
+
+function removeAliment(i) {
+  currentAliments.splice(i, 1);
+  currentAliments.forEach((a, idx) => a._id = idx);
+  const note = document.querySelector('.ai-note')?.textContent || '';
+  renderEditableResults(note);
+}
+
+function addAliment() {
+  const colors = Object.keys(colorMap);
+  currentAliments.push({ nom: 'Nouvel aliment', poids_g: 100, calories: 100, proteines_g: 5, glucides_g: 15, lipides_g: 3, couleur: colors[currentAliments.length % colors.length], _id: currentAliments.length });
+  const note = document.querySelector('.ai-note')?.textContent || '';
+  renderEditableResults(note);
+  // Scroll to bottom so user sees the new row
+  setTimeout(() => document.getElementById('screen').scrollTop = 99999, 50);
+}
+
+function saveCurrentMeal() {
+  const aliments = currentAliments;
+  const totalCal  = aliments.reduce((s,a) => s+(parseInt(a.calories)||0), 0);
+  const totalG    = aliments.reduce((s,a) => s+(parseInt(a.poids_g)||0), 0);
+  const totalProt = aliments.reduce((s,a) => s+(parseFloat(a.proteines_g)||0), 0);
+  const totalGluc = aliments.reduce((s,a) => s+(parseFloat(a.glucides_g)||0), 0);
+  const totalLip  = aliments.reduce((s,a) => s+(parseFloat(a.lipides_g)||0), 0);
+  const note = document.querySelector('.ai-note')?.textContent || '';
+  const meal = {
+    id: Date.now().toString(),
+    date: todayStr(),
+    time: new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    aliments, totalCal, totalG, totalProt, totalGluc, totalLip, note
+  };
   saveMeal(meal);
   toast('Repas enregistré ✓');
   renderHeaderRing();
-  document.getElementById('results').innerHTML += `<p class="small muted" style="text-align:center;margin-top:8px">Repas ajouté à l'historique</p>`;
-  document.querySelector('[onclick*="saveCurrentMeal"]').remove();
+  const btn = document.getElementById('save-meal-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '✓ Enregistré'; }
 }
 
 // ─── HEADER RING ──────────────────────────────────────────────────────────
@@ -935,7 +1013,6 @@ function renderHistory() {
         <div><span class="meal-cal">${m.totalCal}</span><span class="small muted"> kcal</span></div>
         <div style="display:flex;align-items:center;gap:8px">
           <span class="meal-time">${m.time}</span>
-          <button class="meal-del" onclick="removeM('${m.id}')">×</button>
         </div>
       </div>
       <div class="meal-foods">${pills}</div>
@@ -959,6 +1036,15 @@ function removeM(id) {
   if (confirm('Supprimer ce repas ?')) { deleteMeal(id); renderHistory(); renderHeaderRing(); toast('Repas supprimé'); }
 }
 
+function deleteMealFromSettings(id) {
+  if (confirm('Supprimer ce repas ?')) {
+    deleteMeal(id);
+    renderHeaderRing();
+    toast('Repas supprimé');
+    loadSettings(); // refresh the list
+  }
+}
+
 // ─── SETTINGS ─────────────────────────────────────────────────────────────
 function resetOnboard() {
   if (confirm('Reconfigurer ton profil ? Tes données de repas seront conservées.')) {
@@ -976,8 +1062,25 @@ function loadSettings() {
   document.getElementById('s-lip').value = s.lip;
   const key = S.get('nutri_apikey') || '';
   document.getElementById('s-apikey').value = key;
-  // Show profile card
-  const profile = S.get('nutri_profile');
+  // Render meals list for deletion
+  const allMeals = getMeals().slice().reverse();
+  const listEl = document.getElementById('settings-meals-list');
+  if (!allMeals.length) {
+    listEl.innerHTML = '<p class="small muted">Aucun repas enregistré.</p>';
+  } else {
+    listEl.innerHTML = allMeals.map(m => {
+      const d = new Date(m.date + 'T12:00:00');
+      const label = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) + ' · ' + m.time;
+      const foods = m.aliments.map(a=>a.nom).join(', ');
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <p style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${foods}</p>
+          <p class="small muted">${label} · <span style="color:var(--accent)">${m.totalCal} kcal</span></p>
+        </div>
+        <button onclick="deleteMealFromSettings('${m.id}')" style="background:none;border:1px solid #c0392b;border-radius:20px;color:#e74c3c;font-size:12px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0">Suppr.</button>
+      </div>`;
+    }).join('');
+  }
   const card = document.getElementById('profile-card');
   const summary = document.getElementById('profile-summary');
   if (profile && (profile.name || profile.tdee || profile.bmi)) {
