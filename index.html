@@ -123,11 +123,37 @@ h3{font-size:15px;font-weight:500}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ONBOARDING */
-#onboard{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 30px;text-align:center}
-#onboard h1{font-size:36px;margin-bottom:8px}
-#onboard .sub{color:var(--txt2);margin-bottom:40px;font-size:16px}
-#onboard input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font-family:'DM Mono',monospace;font-size:22px;padding:14px 16px;text-align:center;margin-bottom:8px}
-#onboard input:focus{outline:1px solid var(--accent)}
+#onboard{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;overflow-y:auto}
+#onboard::-webkit-scrollbar{display:none}
+.ob-screen{display:none;flex-direction:column;min-height:100%;padding:calc(var(--safe-top) + 40px) 28px calc(var(--safe-bottom) + 40px)}
+.ob-screen.active{display:flex}
+.ob-progress{display:flex;gap:6px;margin-bottom:40px}
+.ob-dot{height:3px;flex:1;border-radius:2px;background:var(--bg4);transition:background 0.4s}
+.ob-dot.done{background:var(--accent)}
+.ob-dot.active{background:var(--accent);opacity:0.5}
+.ob-emoji{font-size:44px;margin-bottom:16px}
+.ob-title{font-size:30px;font-weight:300;letter-spacing:-0.5px;margin-bottom:6px}
+.ob-sub{font-size:15px;color:var(--txt2);margin-bottom:36px;line-height:1.5}
+.ob-field{margin-bottom:20px}
+.ob-label{font-size:12px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px}
+.ob-input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);color:var(--txt);font-family:'DM Sans',sans-serif;font-size:16px;padding:14px 16px;transition:border-color 0.2s}
+.ob-input:focus{outline:none;border-color:var(--accent)}
+.ob-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ob-select-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.ob-chip{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s}
+.ob-chip:active{transform:scale(0.97)}
+.ob-chip.selected{border-color:var(--accent);background:rgba(200,240,122,0.07)}
+.ob-chip .chip-icon{font-size:24px;margin-bottom:6px}
+.ob-chip .chip-label{font-size:13px;font-weight:500}
+.ob-chip .chip-sub{font-size:11px;color:var(--txt3);margin-top:2px}
+.ob-result{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;margin-bottom:20px}
+.ob-result-num{font-size:48px;font-weight:300;font-family:'DM Mono',monospace;color:var(--accent);line-height:1}
+.ob-result-label{font-size:13px;color:var(--txt2);margin-top:4px}
+.ob-macros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.ob-macro{background:var(--bg3);border-radius:var(--r3);padding:10px;text-align:center}
+.ob-macro .mv{font-size:18px;font-weight:500;font-family:'DM Mono',monospace}
+.ob-macro .ml{font-size:10px;color:var(--txt3);margin-top:2px}
+.ob-spacer{flex:1}
 .accent-dot{color:var(--accent)}
 
 /* SECTION TITLE */
@@ -154,12 +180,168 @@ h3{font-size:15px;font-weight:500}
 
 <!-- ONBOARDING -->
 <div id="onboard">
-  <div style="font-size:48px;margin-bottom:16px">🥗</div>
-  <h1>Nutri<span class="accent-dot">.</span></h1>
-  <p class="sub">Ton objectif calorique quotidien</p>
-  <input type="number" id="ob-goal" placeholder="2000" min="800" max="5000">
-  <p style="font-size:12px;color:var(--txt3);margin-bottom:24px">kcal / jour</p>
-  <button class="btn primary" onclick="finishOnboard()">Commencer →</button>
+
+  <!-- STEP 0: Welcome -->
+  <div class="ob-screen active" id="ob0">
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 8px">
+      <div style="font-size:64px;margin-bottom:20px">🥗</div>
+      <h1 style="font-size:40px;font-weight:300;letter-spacing:-1px;margin-bottom:10px">Nutri<span class="accent-dot">.</span></h1>
+      <p style="font-size:16px;color:var(--txt2);line-height:1.6;max-width:280px">Analyse tes repas par photo et suis tes calories au quotidien — avec des objectifs personnalisés pour toi.</p>
+    </div>
+    <button class="btn primary" onclick="obNext(1)" style="margin-top:0">Configurer mon profil →</button>
+    <button class="btn" onclick="obSkip()" style="margin-top:8px">Passer (objectif par défaut)</button>
+  </div>
+
+  <!-- STEP 1: Identity -->
+  <div class="ob-screen" id="ob1">
+    <div class="ob-progress">
+      <div class="ob-dot active" id="dot1"></div>
+      <div class="ob-dot" id="dot2"></div>
+      <div class="ob-dot" id="dot3"></div>
+      <div class="ob-dot" id="dot4"></div>
+    </div>
+    <div class="ob-emoji">👤</div>
+    <h2 class="ob-title">Ton profil</h2>
+    <p class="ob-sub">Ces infos permettent de calculer ton métabolisme de base.</p>
+    <div class="ob-field">
+      <div class="ob-label">Prénom</div>
+      <input class="ob-input" type="text" id="ob-name" placeholder="Ex : Alex" autocomplete="given-name">
+    </div>
+    <div class="ob-row">
+      <div class="ob-field">
+        <div class="ob-label">Âge</div>
+        <input class="ob-input" type="number" id="ob-age" placeholder="28" min="10" max="100">
+      </div>
+      <div class="ob-field">
+        <div class="ob-label">Sexe</div>
+        <select class="ob-input" id="ob-sex" style="appearance:none">
+          <option value="">—</option>
+          <option value="H">Homme</option>
+          <option value="F">Femme</option>
+        </select>
+      </div>
+    </div>
+    <div class="ob-row">
+      <div class="ob-field">
+        <div class="ob-label">Taille (cm)</div>
+        <input class="ob-input" type="number" id="ob-height" placeholder="175" min="100" max="230">
+      </div>
+      <div class="ob-field">
+        <div class="ob-label">Poids (kg)</div>
+        <input class="ob-input" type="number" id="ob-weight" placeholder="70" min="30" max="300">
+      </div>
+    </div>
+    <div class="ob-spacer"></div>
+    <button class="btn primary" onclick="obNext(2)">Continuer →</button>
+    <button class="btn" onclick="obNext(0)" style="margin-top:8px">← Retour</button>
+  </div>
+
+  <!-- STEP 2: Activity -->
+  <div class="ob-screen" id="ob2">
+    <div class="ob-progress">
+      <div class="ob-dot done"></div>
+      <div class="ob-dot active" id="dot2b"></div>
+      <div class="ob-dot"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <div class="ob-emoji">🏃</div>
+    <h2 class="ob-title">Activité physique</h2>
+    <p class="ob-sub">Quel est ton niveau d'activité habituel ?</p>
+    <div class="ob-select-grid" style="grid-template-columns:1fr">
+      <div class="ob-chip" data-act="1.2" onclick="selectActivity(this,'1.2')">
+        <div class="chip-label">🛋️ Sédentaire</div>
+        <div class="chip-sub">Bureau, peu ou pas de sport</div>
+      </div>
+      <div class="ob-chip" data-act="1.375" onclick="selectActivity(this,'1.375')">
+        <div class="chip-label">🚶 Légèrement actif</div>
+        <div class="chip-sub">Sport léger 1–3 fois/semaine</div>
+      </div>
+      <div class="ob-chip" data-act="1.55" onclick="selectActivity(this,'1.55')">
+        <div class="chip-label">🏋️ Modérément actif</div>
+        <div class="chip-sub">Sport 3–5 fois/semaine</div>
+      </div>
+      <div class="ob-chip" data-act="1.725" onclick="selectActivity(this,'1.725')">
+        <div class="chip-label">⚡ Très actif</div>
+        <div class="chip-sub">Sport intense 6–7 fois/semaine</div>
+      </div>
+    </div>
+    <div class="ob-spacer"></div>
+    <button class="btn primary" onclick="obNext(3)">Continuer →</button>
+    <button class="btn" onclick="obNext(1)" style="margin-top:8px">← Retour</button>
+  </div>
+
+  <!-- STEP 3: Goal -->
+  <div class="ob-screen" id="ob3">
+    <div class="ob-progress">
+      <div class="ob-dot done"></div>
+      <div class="ob-dot done"></div>
+      <div class="ob-dot active"></div>
+      <div class="ob-dot"></div>
+    </div>
+    <div class="ob-emoji">🎯</div>
+    <h2 class="ob-title">Ton objectif</h2>
+    <p class="ob-sub">Que veux-tu accomplir ?</p>
+    <div class="ob-select-grid">
+      <div class="ob-chip" data-goal="loss" onclick="selectGoal(this,'loss')">
+        <div class="chip-icon">📉</div>
+        <div class="chip-label">Perdre du poids</div>
+        <div class="chip-sub">−500 kcal/j</div>
+      </div>
+      <div class="ob-chip" data-goal="maintain" onclick="selectGoal(this,'maintain')">
+        <div class="chip-icon">⚖️</div>
+        <div class="chip-label">Maintenir</div>
+        <div class="chip-sub">Équilibre</div>
+      </div>
+      <div class="ob-chip" data-goal="gain" onclick="selectGoal(this,'gain')">
+        <div class="chip-icon">📈</div>
+        <div class="chip-label">Prendre du muscle</div>
+        <div class="chip-sub">+300 kcal/j</div>
+      </div>
+      <div class="ob-chip" data-goal="custom" onclick="selectGoal(this,'custom')">
+        <div class="chip-icon">✏️</div>
+        <div class="chip-label">Personnalisé</div>
+        <div class="chip-sub">Je choisis</div>
+      </div>
+    </div>
+    <div id="custom-cal-wrap" style="display:none;margin-top:4px">
+      <div class="ob-label">Objectif calories / jour</div>
+      <input class="ob-input" type="number" id="ob-custom-cal" placeholder="1800" min="800" max="5000">
+    </div>
+    <div class="ob-spacer"></div>
+    <button class="btn primary" onclick="obNext(4)">Voir mon résultat →</button>
+    <button class="btn" onclick="obNext(2)" style="margin-top:8px">← Retour</button>
+  </div>
+
+  <!-- STEP 4: Summary -->
+  <div class="ob-screen" id="ob4">
+    <div class="ob-progress">
+      <div class="ob-dot done"></div>
+      <div class="ob-dot done"></div>
+      <div class="ob-dot done"></div>
+      <div class="ob-dot active"></div>
+    </div>
+    <div class="ob-emoji">✨</div>
+    <h2 class="ob-title" id="ob-hello">Voici ton plan</h2>
+    <p class="ob-sub" id="ob-summary-sub">Basé sur ton profil, voici tes objectifs personnalisés.</p>
+    <div class="ob-result" id="ob-result-card">
+      <div class="ob-result-label">Objectif calorique quotidien</div>
+      <div class="ob-result-num" id="ob-cal-result">—</div>
+      <div class="ob-result-label">kcal / jour</div>
+      <div class="ob-macros">
+        <div class="ob-macro"><div class="mv" id="ob-prot-r" style="color:#7affc0">—</div><div class="ml">Prot. g</div></div>
+        <div class="ob-macro"><div class="mv" id="ob-gluc-r" style="color:#f0a87a">—</div><div class="ml">Gluc. g</div></div>
+        <div class="ob-macro"><div class="mv" id="ob-lip-r"  style="color:#ffc850">—</div><div class="ml">Lip. g</div></div>
+      </div>
+    </div>
+    <div id="ob-bmi-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;color:var(--txt2)">IMC estimé</span>
+      <span id="ob-bmi-val" style="font-size:18px;font-weight:500;font-family:'DM Mono',monospace"></span>
+    </div>
+    <div class="ob-spacer"></div>
+    <button class="btn primary" onclick="finishOnboard()">Commencer →</button>
+    <button class="btn" onclick="obNext(3)" style="margin-top:8px">← Modifier</button>
+  </div>
+
 </div>
 
 <div id="app" style="display:none">
@@ -221,6 +403,11 @@ h3{font-size:15px;font-weight:500}
     <div class="page" id="page-settings">
       <div style="padding-top:8px;margin-bottom:20px">
         <h1>Réglages</h1>
+      </div>
+      <div class="card" id="profile-card" style="display:none">
+        <h3 style="margin-bottom:12px">Mon profil</h3>
+        <div id="profile-summary"></div>
+        <button class="btn" style="margin-top:12px" onclick="resetOnboard()">Reconfigurer mon profil</button>
       </div>
       <div class="card">
         <h3 style="margin-bottom:4px">Objectifs journaliers</h3>
@@ -310,17 +497,104 @@ function mealsForDate(dateStr) {
   return getMeals().filter(m => m.date === dateStr);
 }
 
-// ─── ONBOARDING ────────────────────────────────────────────────────────────
-function finishOnboard() {
-  const val = parseInt(document.getElementById('ob-goal').value) || 2000;
+// ─── ONBOARDING LOGIC ─────────────────────────────────────────────────────
+let obData = { activityFactor: 1.55, goal: 'maintain' };
+
+function obNext(step) {
+  document.querySelectorAll('.ob-screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('ob' + step);
+  if (el) { el.classList.add('active'); document.getElementById('onboard').scrollTop = 0; }
+  if (step === 4) computeAndShowResult();
+}
+
+function obSkip() {
   const s = getSettings();
-  s.cal = val;
   S.set('nutri_settings', s);
   S.set('nutri_onboarded', true);
+  S.set('nutri_profile', { name: '' });
   document.getElementById('onboard').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
-  renderDash();
   renderHeaderRing();
+}
+
+function selectActivity(el, val) {
+  document.querySelectorAll('[data-act]').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  obData.activityFactor = parseFloat(val);
+}
+
+function selectGoal(el, val) {
+  document.querySelectorAll('[data-goal]').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  obData.goal = val;
+  document.getElementById('custom-cal-wrap').style.display = val === 'custom' ? 'block' : 'none';
+}
+
+function computeAndShowResult() {
+  const name   = (document.getElementById('ob-name').value || '').trim();
+  const age    = parseInt(document.getElementById('ob-age').value) || 30;
+  const sex    = document.getElementById('ob-sex').value || 'H';
+  const height = parseFloat(document.getElementById('ob-height').value) || 170;
+  const weight = parseFloat(document.getElementById('ob-weight').value) || 70;
+  const act    = obData.activityFactor || 1.55;
+  const goal   = obData.goal || 'maintain';
+
+  // Harris-Benedict BMR
+  let bmr = sex === 'H'
+    ? 88.36 + (13.4 * weight) + (4.8 * height) - (5.7 * age)
+    : 447.6 + (9.2 * weight) + (3.1 * height) - (4.3 * age);
+  let tdee = Math.round(bmr * act);
+
+  let cal = tdee;
+  if (goal === 'loss')     cal = tdee - 500;
+  if (goal === 'gain')     cal = tdee + 300;
+  if (goal === 'custom') {
+    const custom = parseInt(document.getElementById('ob-custom-cal').value);
+    if (custom > 0) cal = custom;
+  }
+  cal = Math.max(cal, 1200);
+
+  // Macros
+  const prot = Math.round(weight * 1.8);
+  const lip  = Math.round(cal * 0.28 / 9);
+  const gluc = Math.round((cal - prot * 4 - lip * 9) / 4);
+
+  // BMI
+  const bmi = (weight / ((height/100) ** 2)).toFixed(1);
+  const bmiLabel = bmi < 18.5 ? 'Insuffisant' : bmi < 25 ? 'Normal ✓' : bmi < 30 ? 'Surpoids' : 'Obésité';
+  const bmiColor = bmi < 18.5 ? '#f0a87a' : bmi < 25 ? '#c8f07a' : bmi < 30 ? '#ffc850' : '#f0a87a';
+
+  // Store computed
+  obData.computed = { cal, prot, gluc, lip, tdee, bmi, bmiLabel, bmiColor, name };
+
+  // Render
+  if (name) {
+    document.getElementById('ob-hello').textContent = `Parfait, ${name} 👋`;
+  }
+  document.getElementById('ob-cal-result').textContent = cal;
+  document.getElementById('ob-prot-r').textContent = prot;
+  document.getElementById('ob-gluc-r').textContent = gluc;
+  document.getElementById('ob-lip-r').textContent  = lip;
+  document.getElementById('ob-bmi-val').innerHTML  = `<span style="color:${bmiColor}">${bmi}</span> <span style="font-size:12px;color:var(--txt3)">${bmiLabel}</span>`;
+}
+
+function finishOnboard() {
+  const c = obData.computed || {};
+  const s = {
+    cal:  c.cal  || 2000,
+    prot: c.prot || 150,
+    gluc: c.gluc || 200,
+    lip:  c.lip  || 65,
+  };
+  S.set('nutri_settings', s);
+  S.set('nutri_onboarded', true);
+  S.set('nutri_profile', { name: c.name || '', tdee: c.tdee, bmi: c.bmi });
+  document.getElementById('onboard').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  renderHeaderRing();
+  // Update greeting with name
+  const greet = document.querySelector('#page-scan .small.muted');
+  if (greet && c.name) greet.textContent = `Bonjour ${c.name} 👋`;
 }
 
 // ─── NAVIGATION ───────────────────────────────────────────────────────────
@@ -668,12 +942,38 @@ function removeM(id) {
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────────────────────
+function resetOnboard() {
+  if (confirm('Reconfigurer ton profil ? Tes données de repas seront conservées.')) {
+    localStorage.removeItem('nutri_onboarded');
+    localStorage.removeItem('nutri_profile');
+    location.reload();
+  }
+}
+
 function loadSettings() {
   const s = getSettings();
   document.getElementById('s-cal').value = s.cal;
   document.getElementById('s-prot').value = s.prot;
   document.getElementById('s-gluc').value = s.gluc;
   document.getElementById('s-lip').value = s.lip;
+  // Show profile card
+  const profile = S.get('nutri_profile');
+  const card = document.getElementById('profile-card');
+  const summary = document.getElementById('profile-summary');
+  if (profile && (profile.name || profile.tdee || profile.bmi)) {
+    card.style.display = 'block';
+    const rows = [];
+    if (profile.name) rows.push(['Prénom', profile.name]);
+    if (profile.tdee) rows.push(['Dépense énergétique', profile.tdee + ' kcal/j']);
+    if (profile.bmi)  rows.push(['IMC', profile.bmi]);
+    summary.innerHTML = rows.map(([l,v]) => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+        <span class="small muted">${l}</span>
+        <span style="font-size:13px;font-weight:500">${v}</span>
+      </div>`).join('');
+  } else {
+    card.style.display = 'none';
+  }
 }
 
 function saveSettings() {
@@ -710,6 +1010,9 @@ function toast(msg) {
     document.getElementById('onboard').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
     renderHeaderRing();
+    const profile = S.get('nutri_profile');
+    const greet = document.querySelector('#page-scan .small.muted');
+    if (greet && profile && profile.name) greet.textContent = `Bonjour ${profile.name} 👋`;
   }
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(()=>{});
